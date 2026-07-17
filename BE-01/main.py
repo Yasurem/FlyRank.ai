@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 
 app = FastAPI()
@@ -22,6 +22,7 @@ tasks = {
 }
 
 # Endpoints
+# Stage 1
 @app.get("/")
 async def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
@@ -33,7 +34,7 @@ async def health():
 # Stage 2
 @app.get("/tasks")
 async def get_tasks():
-    return tasks
+    return list(tasks.values())
 
 @app.get("/tasks/{id}")
 async def get_task(id: int):
@@ -87,7 +88,7 @@ async def create_task(task: dict):
 
     return JSONResponse(
         status_code=201,
-        content={"message": f"Done, here's your receipt.", "task": new_task}
+        content=new_task
     )
 
 # Stage 4
@@ -127,8 +128,5 @@ async def delete_task(id: int):
 
     # Delete the task
     del tasks[id]
-    return JSONResponse(
-        status_code=204,
-        content={"message":"No Content"}
-    )
+    return Response(status_code=204)
     
