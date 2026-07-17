@@ -89,3 +89,46 @@ async def create_task(task: dict):
         status_code=201,
         content={"message": f"Done, here's your receipt.", "task": new_task}
     )
+
+# Stage 4
+@app.put("/tasks/{id}")
+async def update_task(id: int, task: dict):
+
+    # Validate if task is empty or invalid
+    if not task:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Empty or invalid body"}
+        )
+    
+    # Check if task exists in db
+    if id not in tasks:
+        return JSONResponse(
+            status_code=404,
+            content={"message": "Unknown task ID"}
+        )
+    
+    # Update the task
+    tasks[id].update(task)
+
+    # Return the updated task
+    return tasks[id]
+
+
+@app.delete("/tasks/{id}")
+async def delete_task(id: int):
+
+    # Validate ID
+    if id not in tasks:
+        return JSONResponse(
+            status_code=404,
+            content={"message": "Unknown task ID"}
+        )
+
+    # Delete the task
+    del tasks[id]
+    return JSONResponse(
+        status_code=204,
+        content={"message":"No Content"}
+    )
+    
