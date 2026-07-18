@@ -20,6 +20,8 @@ In your terminal, install the FastAPI library using the Python Package Installer
 `pip install "fastapi[standard]"`
 
 ##### Execution
+Enter the path: ../BE-01
+Run the following command in your terminal:
 `fastapi dev`
 
 ---
