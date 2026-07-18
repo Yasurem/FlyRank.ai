@@ -59,4 +59,4 @@ content-type: application/json
 ```
 
 ## SwaggerUI Screenshot:
-![Swagger UI Screenshot for Stage 5]("Swagger_UI.png")
+![Swagger UI Screenshot for Stage 5](Swagger_UI.png)
