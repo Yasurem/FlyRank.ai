@@ -55,3 +55,6 @@ content-type: application/json
 
 {"id":4,"title":"Finish CS50x Final Project","done":false}
 ```
+
+## SwaggerUI Screenshot:
+![Swagger UI Screenshot for Stage 5]()
