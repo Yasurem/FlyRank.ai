@@ -96,7 +96,7 @@ async def create_task(task: dict):
 async def update_task(id: int, task: dict):
 
     # Validate if task is empty or invalid
-    if not task:
+    if not task or task.get("title").strip()=="":
         return JSONResponse(
             status_code=400,
             content={"error": "Empty or invalid body"}
