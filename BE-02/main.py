@@ -93,24 +93,40 @@ def create_task(task: dict):
 def update_task(id: int, task: dict):
 
     # Validate if task is empty or invalid
-    if not task or task.get("title").strip()=="":
+    title = task.get("title")
+    if not isinstance(title, str) or not title.strip():
         return JSONResponse(
-            status_code=400,
-            content={"error": "Empty or invalid body"}
-        )
-    
-    # Check if task exists in db
-    if id not in tasks:
+                status_code=400,
+                content={"message": "title is empty"}
+            )
+
+    title = title.strip()
+
+    # Update the task
+    update_req = {
+        "title": title,
+        "id": id
+    }
+
+    # Update db
+    c.execute("UPDATE tasks SET title = :title WHERE id = :id RETURNING id, title, done", update_req)
+
+    # Store updated row
+    updated = c.fetchone()
+
+    # Check if a row got updated
+    if updated is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Unknown task ID"}
         )
-    
-    # Update the task
-    tasks[id].update(task)
+    conn.commit()
+
+    updated = dict(updated)
+    updated["done"] = bool(updated["done"])
 
     # Return the updated task
-    return tasks[id]
+    return updated
 
 
 @app.delete("/tasks/{id}")
