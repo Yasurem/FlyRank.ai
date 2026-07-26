@@ -9,7 +9,6 @@ conn.row_factory = sqlite3.Row
 c = conn.cursor()
 
 # Endpoints
-# Stage 1
 @app.get("/")
 def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
@@ -18,12 +17,11 @@ def root():
 def health():
     return { "status": "ok" }
 
-# Stage 2
+# Stage 1
 @app.get("/tasks")
 def get_tasks():
 
     c.execute("SELECT * FROM tasks")
-
     return [dict(row) for row in c.fetchall()]
 
 @app.get("/tasks/{id}")
@@ -39,7 +37,7 @@ def get_task(id: int):
 
     return dict(row)
 
-# Stage 3
+# Stage 2
 @app.post("/tasks")
 def create_task(task: dict):
 
@@ -66,25 +64,28 @@ def create_task(task: dict):
             content={"error": "Task title is empty"}
         )
 
-    # Assign a new ID to the task
-    new_id = max(tasks.keys())+ 1 if tasks else 1
+    # DEPRECATE: Assign a new ID to the task
+    # new_id = max(tasks.keys())+ 1 if tasks else 1
+    # ---------------------------------------------
+    # SQLite INTEGER PRIMARY KEY AUTOINCREMENTS
 
     # Assign the new ID to the task and set done to default False
     new_task = {
-        "id": new_id,
         "title": task["title"],
         "done": False
     }
 
-    # Add it to the tasks dictionary
-    tasks[new_id] = new_task
+    # Add new task to the tasks database
+    c.execute("INSERT INTO tasks (title, done) VALUES (:title, :done) RETURNING id, title, done", new_task)
+
+    upd_row = c.fetchone()
 
     return JSONResponse(
         status_code=201,
-        content=new_task
+        content=dict(upd_row)
     )
 
-# Stage 4
+# Stage ?
 @app.put("/tasks/{id}")
 def update_task(id: int, task: dict):
 
