@@ -1,54 +1,49 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
+import sqlite3
 
 app = FastAPI()
 
-# Dict of tasks
-tasks = {
-    1: {"id": 1, 
-        "title": "Create a simple CRUD app", 
-        "done": False 
-    },
-
-    2: {"id": 2, 
-        "title": "Finish Linear Regression Lecture", 
-        "done": True 
-    },
-
-    3: {"id": 3, 
-        "title": "Review basic probability concepts and Bayes' Theorem", 
-        "done": True 
-    }
-}
+conn = sqlite3.connect("tasks.db", check_same_thread=False)
+conn.row_factory = sqlite3.Row
+c = conn.cursor()
 
 # Endpoints
 # Stage 1
 @app.get("/")
-async def root():
+def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
 
 @app.get("/health")
-async def health():
+def health():
     return { "status": "ok" }
 
 # Stage 2
 @app.get("/tasks")
-async def get_tasks():
-    return list(tasks.values())
+def get_tasks():
+    c.execute("SELECT * FROM tasks")
+    rows = []
+    for row in c.fetchall():
+        rows = dict(row)
+
+    return rows
 
 @app.get("/tasks/{id}")
-async def get_task(id: int):
-    if id in tasks:
-        return tasks[id]
-    
-    return JSONResponse(
-            status_code=404,
-            content={"error": f"Task {id} not found"}
-        )
+def get_task(id: int):
+    c.execute("SELECT * FROM tasks WHERE id = ?", (id,))
+    row = c.fetchone()
+
+    if not row:
+        return JSONResponse(
+                status_code=404,
+                content={"error": f"Task {id} not found"}
+            )
+
+    return dict(row)
 
 # Stage 3
 @app.post("/tasks")
-async def create_task(task: dict):
+def create_task(task: dict):
 
     # Validate input
     if "title" not in task:
@@ -93,7 +88,7 @@ async def create_task(task: dict):
 
 # Stage 4
 @app.put("/tasks/{id}")
-async def update_task(id: int, task: dict):
+def update_task(id: int, task: dict):
 
     # Validate if task is empty or invalid
     if not task or task.get("title").strip()=="":
@@ -117,7 +112,7 @@ async def update_task(id: int, task: dict):
 
 
 @app.delete("/tasks/{id}")
-async def delete_task(id: int):
+def delete_task(id: int):
 
     # Validate ID
     if id not in tasks:

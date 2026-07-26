@@ -21,8 +21,9 @@ In your terminal, install the FastAPI library using the Python Package Installer
 
 ##### Execution
 Enter the path: ../BE-01
-Run the following command in your terminal:
-`fastapi dev`
+Run the following commands in your terminal:
+`sqlite3 tasks.db "tasks.sql"`      - init database
+`fastapi dev`                       - exec server      
 
 ---
 
@@ -60,3 +61,4 @@ content-type: application/json
 
 ## SwaggerUI Screenshot:
 ![Swagger UI Screenshot for Stage 5](Swagger_UI.png)
+
