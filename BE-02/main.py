@@ -21,12 +21,10 @@ def health():
 # Stage 2
 @app.get("/tasks")
 def get_tasks():
-    c.execute("SELECT * FROM tasks")
-    rows = []
-    for row in c.fetchall():
-        rows = dict(row)
 
-    return rows
+    c.execute("SELECT * FROM tasks")
+
+    return [dict(row) for row in c.fetchall()]
 
 @app.get("/tasks/{id}")
 def get_task(id: int):
