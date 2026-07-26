@@ -44,7 +44,7 @@ The following demonstrates a standard HTTP `POST` request to create a new task, 
 
 **Command:**
 ```bash
-curl -i -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d '{"title": "Finish CS50x Final Project"}'
+curl -i -X POST http://127.0.0.1:8000/tasks -H "Content-Type: application/json" -d '{"title": "Finish CS50x Final Project"}'
 ```
 
 **Output:**

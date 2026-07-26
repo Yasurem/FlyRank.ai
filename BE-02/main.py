@@ -1,17 +1,68 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
-import sqlite3
+from contextlib import asynccontextmanager
+import sqlite3, os, sys, uvicorn
 
-app = FastAPI()
+conn = None
 
-conn = sqlite3.connect("tasks.db", check_same_thread=False)
+# ----------------------------------------------------------
+# |                     SEED DATABASE                      
+# ----------------------------------------------------------
+def execute_seed(db_path: str, sql_file_path: str) -> None:
+    if not os.path.exists(sql_file_path):
+        print(f"Error: Seed file '{sql_file_path}' missing.", file=sys.stderr)
+        sys.exit(1)
+        
+    with open(sql_file_path, "r", encoding="utf-8") as file:
+        sql_script = file.read()
+        
+    with sqlite3.connect(db_path, timeout=5.0) as conn:
+        conn.executescript(sql_script)
+        print(f"Successfully seeded {db_path} using {sql_file_path}")
+
+
+# ----------------------------------------------------------
+# |                  LIFESPAN MANAGER                      
+# ----------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global conn
+    
+    # 1. Guarantee directory exists before establishing the persistent connection
+    os.makedirs("database", exist_ok=True)
+    
+    # 2. Execute the seed script
+    execute_seed("database/tasks.db", "database/seed.sql")
+    
+    # 3. Initialize the global database connection
+    conn = sqlite3.connect("database/tasks.db", check_same_thread=False, timeout=5.0)
+    conn.row_factory = sqlite3.Row
+    
+    yield  # Server handles requests here
+    
+    # 4. Teardown: Safely close the global connection on server shutdown
+    if conn:
+        conn.close()
+
+
+# ----------------------------------------------------------
+# |                  CONNECT TO DATABASE                      
+# ----------------------------------------------------------
+conn = sqlite3.connect("database/tasks.db", check_same_thread=False)
 conn.row_factory = sqlite3.Row
-c = conn.cursor()
+
+
+# ----------------------------------------------------------
+# |               INIT APP AND AI ENDPOINTS                      
+# ----------------------------------------------------------
+app = FastAPI(lifespan=lifespan)
+
 
 # Endpoints
 @app.get("/")
 def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
+
 
 @app.get("/health")
 def health():
@@ -20,12 +71,15 @@ def health():
 # Stage 1
 @app.get("/tasks")
 def get_tasks():
-
+    c = conn.cursor()
     c.execute("SELECT * FROM tasks")
+
     return [dict(row) for row in c.fetchall()]
+
 
 @app.get("/tasks/{id}")
 def get_task(id: int):
+    c = conn.cursor()
     c.execute("SELECT * FROM tasks WHERE id = ?", (id,))
     row = c.fetchone()
 
@@ -36,6 +90,7 @@ def get_task(id: int):
             )
 
     return dict(row)
+
 
 # Stage 2
 @app.post("/tasks")
@@ -74,6 +129,7 @@ def create_task(task: dict):
         "title": task["title"],
         "done": False
     }
+    c = conn.cursor()
 
     # Add new task to the tasks database
     c.execute("INSERT INTO tasks (title, done) VALUES (:title, :done) RETURNING id, title, done", new_task)
@@ -87,6 +143,7 @@ def create_task(task: dict):
         status_code=201,
         content=upd_row
     )
+
 
 # Stage 3
 @app.put("/tasks/{id}")
@@ -113,7 +170,7 @@ def update_task(id: int, task: dict):
     title = title.strip()
 
     c = conn.cursor()
-    
+
     # Update the task
     update_req = {
         "title": title,
@@ -146,6 +203,8 @@ def update_task(id: int, task: dict):
 @app.delete("/tasks/{id}")
 def delete_task(id: int):
 
+    c = conn.cursor()
+
     # Delete the task
     c.execute("DELETE FROM tasks WHERE id = ?", (id,))
 
@@ -155,6 +214,10 @@ def delete_task(id: int):
             status_code=404,
             content={"message": "Unknown task ID"}
         )
+    
     conn.commit()
     return Response(status_code=204)
-    
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

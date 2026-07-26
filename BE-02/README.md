@@ -6,14 +6,17 @@
 
 ---
 
-This project was created by **Joemarc Jr. D. Castillo** for compliance with the **FlyRank Internship** Requirement ***Build you first CRUD API*** also known as _Assignment A1_ or _BE-01_ under the Backend AI Engineering Track. This README markdown file, specifically, is a requirement to accomplish __Stage 6__ _(Publish to Github)_ of this assignment. In summary, **all six required stages were successfully implemented for this project.**
+This project was created by **Joemarc Jr. D. Castillo** for compliance with the **FlyRank Internship's Week 3** Requirement ***Connecting to the database*** also known as _Assignment A2_ or _BE-02_ under the Backend AI Engineering Track. The update of this README markdown file specifically is a requirement to accomplish __Stage 5__ _(database documentation)_ of this assignment. In summary, **all six required stages were successfully implemented for this project.** In summary, this project is an upgrade of the first assignment. From a simple CRUD To-Do List API, this project became a step closer to becoming a production-level product as it now has its very own **database**. Because of this upgrade, data for the to-do list no longer live in memory; but in an actual permanent .db file (unless deleted of course).
 
 ## Dependencies, Installation, and Execution
 *Note: Running these commands in a virtual environment(.venv) would be useful, especially if you don't plan to use the dependencies in this project elsewhere.*
 
+**SQLite** is a simple and lightweight relational database engine. Since this is a simple project, SQLite is perfect for creating a prototype and exploring the basics of backend-to-database connection. Just from this simple upgrade, the data now lives in a single file and users can now access their past data without manually retyping their progress.
+
 ##### Project Dependencies:
 Python 3.12+
 FastAPI Library
+SQLite3 (built-in in Python)
 
 ##### Installation
 In your terminal, install the FastAPI library using the Python Package Installer (pip) 
@@ -22,8 +25,8 @@ In your terminal, install the FastAPI library using the Python Package Installer
 ##### Execution
 Enter the path: ../BE-01
 Run the following commands in your terminal:
-`sqlite3 tasks.db "tasks.sql"`      - init database
-`fastapi dev`                       - exec server      
+[Mandatory]
+`fastapi dev main.py`         - init server     
 
 ---
 
@@ -41,24 +44,83 @@ Run the following commands in your terminal:
 ---
 
 ## Example Execution
-The following demonstrates a standard HTTP `POST` request to create a new task, executed via `curl`, alongside the strict response headers and serialized JSON payload returned by the server.
+The following demonstrates a standard HTTP `GET` request to enter the root page, executed via `curl`, alongside the strict response headers and serialized JSON payload returned by the server.
 
-**Command:**
+**Sample Command:**
+Find Root
 ```bash
-curl -i -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d '{"title": "Finish CS50x Final Project"}'
+curl -X 'GET' \
+  'http://127.0.0.1:8000/' \
+  -H 'accept: application/json'
 ```
 
 **Output:**
 ```text
-HTTP/1.1 201 Created
-date: Sat, 18 Jul 2026 11:29:10 GMT
-server: uvicorn
-content-length: 58
-content-type: application/json
+content-length: 58 
+content-type: application/json 
+date: Sun,26 Jul 2026 09:33:48 GMT 
+server: uvicorn 
 
-{"id":4,"title":"Finish CS50x Final Project","done":false}
+{"name":"Task API","version":"1.0","endpoints":["/tasks"]
 ```
 
-## SwaggerUI Screenshot:
-![Swagger UI Screenshot for Stage 5](Swagger_UI.png)
+**Other useful commands:**
+Get All Existing Tasks
+```bash
+curl -X 'GET' \
+  'http://127.0.0.1:8000/tasks' \
+  -H 'accept: application/json'
+```
 
+Create Your First Task
+```bash
+curl -X 'POST' \
+  'http://127.0.0.1:8000/tasks' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title":"Input Task Here"
+}'
+```
+
+Get a Specific Task
+```bash
+curl -X 'GET' \
+  'http://127.0.0.1:8000/tasks/4' \
+  -H 'accept: application/json'
+}'
+```
+
+Update a Task
+```bash
+curl -X 'PUT' \
+  'http://127.0.0.1:8000/tasks/4' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title": "Update Task Title Here",
+  "done": true
+}'
+```
+
+Delete a Task _(Note: This is JSON Syntax (Py: True != JS: true))_
+```bash
+curl -X 'PUT' \
+  'http://127.0.0.1:8000/tasks/4' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title": "Update Task Title Here",
+  "done": true
+}'
+```
+
+
+## SwaggerUI Screenshot:
+![Swagger UI Screenshot for Stage 5](images/Swagger_UI.png)
+
+## Database open in DB Browser for SQLite Screenshot
+![Swagger UI Screenshot for Stage 5](images/Database.png)
+
+## SQL Query from Stage 4
+![Swagger UI Screenshot for Stage 5](images/SQL_query.png)
