@@ -77,9 +77,11 @@ def create_task(task: dict):
 
     # Add new task to the tasks database
     c.execute("INSERT INTO tasks (title, done) VALUES (:title, :done) RETURNING id, title, done", new_task)
+    
 
     upd_row = c.fetchone()
-
+    conn.commit()
+    
     return JSONResponse(
         status_code=201,
         content=dict(upd_row)
