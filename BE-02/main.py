@@ -88,28 +88,41 @@ def create_task(task: dict):
         content=upd_row
     )
 
-# Stage ?
+# Stage 3
 @app.put("/tasks/{id}")
 def update_task(id: int, task: dict):
 
     # Validate if task is empty or invalid
     title = task.get("title")
+    status = task.get("done")
+
+    # Validate title
     if not isinstance(title, str) or not title.strip():
         return JSONResponse(
                 status_code=400,
-                content={"message": "title is empty"}
+                content={"message": "Title is empty"}
+            )
+
+    # Validate status or done
+    if not isinstance(status, bool):
+        return JSONResponse(
+                status_code=400,
+                content={"message": "Done stats must be boolean"}
             )
 
     title = title.strip()
 
+    c = conn.cursor()
+    
     # Update the task
     update_req = {
         "title": title,
+        "done": status,
         "id": id
     }
 
     # Update db
-    c.execute("UPDATE tasks SET title = :title WHERE id = :id RETURNING id, title, done", update_req)
+    c.execute("UPDATE tasks SET title = :title, done = :done WHERE id = :id RETURNING id, title, done", update_req)
 
     # Store updated row
     updated = c.fetchone()
@@ -120,6 +133,7 @@ def update_task(id: int, task: dict):
             status_code=404,
             content={"message": "Unknown task ID"}
         )
+    
     conn.commit()
 
     updated = dict(updated)
@@ -132,14 +146,15 @@ def update_task(id: int, task: dict):
 @app.delete("/tasks/{id}")
 def delete_task(id: int):
 
-    # Validate ID
-    if id not in tasks:
+    # Delete the task
+    c.execute("DELETE FROM tasks WHERE id = ?", (id,))
+
+    # Validate if id exists
+    if c.rowcount == 0:
         return JSONResponse(
             status_code=404,
             content={"message": "Unknown task ID"}
         )
-
-    # Delete the task
-    del tasks[id]
+    conn.commit()
     return Response(status_code=204)
     
