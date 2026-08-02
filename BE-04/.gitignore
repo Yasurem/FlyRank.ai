@@ -1,2 +1,4 @@
-database/tasks.db
 .env
+__pycache__/
+*.pyc
+database/tasks.db
