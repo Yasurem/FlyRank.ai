@@ -1,0 +1,2 @@
+Commands:
+docker run --name taskdb --env-file ../.env  -p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres:17

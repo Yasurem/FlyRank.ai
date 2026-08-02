@@ -1,181 +1,94 @@
+import os, uvicorn
+from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import sqlite3, os, sys, uvicorn
+from pydantic import BaseModel, field_validator
+import repository
 
-conn = None
-
-# ----------------------------------------------------------
-# |                     SEED DATABASE                      
-# ----------------------------------------------------------
-def execute_seed(db_path: str, sql_file_path: str) -> None:
-    if not os.path.exists(sql_file_path):
-        print(f"Error: Seed file '{sql_file_path}' missing.", file=sys.stderr)
-        sys.exit(1)
-        
-    with open(sql_file_path, "r", encoding="utf-8") as file:
-        sql_script = file.read()
-        
-    with sqlite3.connect(db_path, timeout=5.0) as conn:
-        conn.executescript(sql_script)
-        print(f"Successfully seeded {db_path} using {sql_file_path}")
-
+# Load env file
+load_dotenv()
 
 # ----------------------------------------------------------
-# |                  LIFESPAN MANAGER                      
+# |            DATA TRANSFER OBJECTS (PYDANTIC)
+# ----------------------------------------------------------
+class TaskCreate(BaseModel):
+    title: str
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Title cannot be empty or whitespace.")
+        return stripped
+
+
+class TaskUpdate(BaseModel):
+    title: str
+    done: bool
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Title cannot be empty or whitespace.")
+        return stripped
+
+# ----------------------------------------------------------
+# | LIFESPAN MANAGER
 # ----------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global conn
-    
-    # 1. Guarantee directory exists before establishing the persistent connection
-    os.makedirs("database", exist_ok=True)
-    
-    # 2. Execute the seed script
-    execute_seed("database/tasks.db", "database/seed.sql")
-    
-    # 3. Initialize the global database connection
-    conn = sqlite3.connect("database/tasks.db", check_same_thread=False, timeout=5.0)
-    conn.row_factory = sqlite3.Row
-    
-    yield  # Server handles requests here
-    
-    # 4. Teardown: Safely close the global connection on server shutdown
-    if conn:
-        conn.close()
+    repository.setup_database()
+    yield
 
 
 # ----------------------------------------------------------
-# |               INIT APP AND AI ENDPOINTS                      
+# | INIT APP AND AI ENDPOINTS
 # ----------------------------------------------------------
 app = FastAPI(lifespan=lifespan)
-
 
 # Endpoints
 @app.get("/")
 def root():
-    return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
-
+    return {"name": "Task API", "version": "1.0", "endpoints": ["/tasks"]}
 
 @app.get("/health")
 def health():
-    return { "status": "ok" }
+    return {"status": "ok"}
 
 # Stage 1
 @app.get("/tasks")
 def get_tasks():
-    c = conn.cursor()
-    c.execute("SELECT * FROM tasks")
-
-    return [dict(row) for row in c.fetchall()]
-
+    return repository.get_all_tasks()
 
 @app.get("/tasks/{id}")
 def get_task(id: int):
-    c = conn.cursor()
-    c.execute("SELECT * FROM tasks WHERE id = ?", (id,))
-    row = c.fetchone()
+    row = repository.get_task(id)
 
     if not row:
-        return JSONResponse(
-                status_code=404,
-                content={"error": f"Task {id} not found"}
-            )
+        return JSONResponse(status_code=404, content={"error": f"Task {id} not found."})
 
-    return dict(row)
-
+    return row
 
 # Stage 2
 @app.post("/tasks")
-def create_task(task: dict):
-
-    # Validate input
-    if "title" not in task:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Task title is missing"}
-        )
-
-    # Ensure the title is a string
-    if not isinstance(task["title"], str):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Task title must be a string"}
-        )
-
-    # Validate cleaned title
-    task["title"] = task["title"].strip()
-
-    if task["title"] == "":
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Task title is empty"}
-        )
-
-    # DEPRECATE: Assign a new ID to the task
-    # new_id = max(tasks.keys())+ 1 if tasks else 1
-    # ---------------------------------------------
-    # SQLite INTEGER PRIMARY KEY AUTOINCREMENTS
-
+def create_task(task: TaskCreate):
     # Assign the new ID to the task and set done to default False
-    new_task = {
-        "title": task["title"],
-        "done": False
-    }
-    c = conn.cursor()
-
-    # Add new task to the tasks database
-    c.execute("INSERT INTO tasks (title, done) VALUES (:title, :done) RETURNING id, title, done", new_task)
-
-    upd_row = dict(c.fetchone())
-    conn.commit()
-
-    upd_row["done"] = bool(upd_row["done"])
+    new_task = repository.create_task(title=task.title, done=False)
 
     return JSONResponse(
         status_code=201,
-        content=upd_row
+        content=new_task
     )
-
 
 # Stage 3
 @app.put("/tasks/{id}")
-def update_task(id: int, task: dict):
-
-    # Validate if task is empty or invalid
-    title = task.get("title")
-    status = task.get("done")
-
-    # Validate title
-    if not isinstance(title, str) or not title.strip():
-        return JSONResponse(
-                status_code=400,
-                content={"message": "Title is empty"}
-            )
-
-    # Validate status or done
-    if not isinstance(status, bool):
-        return JSONResponse(
-                status_code=400,
-                content={"message": "Done stats must be boolean"}
-            )
-
-    title = title.strip()
-
-    c = conn.cursor()
-
+def update_task(id: int, task: TaskUpdate):
     # Update the task
-    update_req = {
-        "title": title,
-        "done": status,
-        "id": id
-    }
-
-    # Update db
-    c.execute("UPDATE tasks SET title = :title, done = :done WHERE id = :id RETURNING id, title, done", update_req)
-
-    # Store updated row
-    updated = c.fetchone()
+    updated = repository.update_task(task_id=id, title=task.title, done=task.done)
 
     # Check if a row got updated
     if updated is None:
@@ -183,34 +96,21 @@ def update_task(id: int, task: dict):
             status_code=404,
             content={"message": "Unknown task ID"}
         )
-    
-    conn.commit()
-
-    updated = dict(updated)
-    updated["done"] = bool(updated["done"])
 
     # Return the updated task
     return updated
 
-
 @app.delete("/tasks/{id}")
 def delete_task(id: int):
+    success = repository.delete_task(task_id=id)
 
-    c = conn.cursor()
-
-    # Delete the task
-    c.execute("DELETE FROM tasks WHERE id = ?", (id,))
-
-    # Validate if id exists
-    if c.rowcount == 0:
+    if not success:
         return JSONResponse(
             status_code=404,
             content={"message": "Unknown task ID"}
         )
-    
-    conn.commit()
-    return Response(status_code=204)
 
+    return Response(status_code=204)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY,
-    title TEXT NOT NULL,
-    done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1))
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    done BOOLEAN DEFAULT false
 );
 
-INSERT INTO tasks(title, done)
+INSERT INTO tasks (title, done)
 SELECT title, done
 FROM (
-    SELECT 'Brush teeth' AS title, 1 AS done UNION ALL
-    SELECT 'Review Statistics' AS title, 1 AS done UNION ALL
-    SELECT 'Finish FlyRank Assignment' AS title, 0 AS done
+    SELECT 'Brush teeth' AS title, '1'::boolean AS done UNION ALL
+    SELECT 'Review Statistics' AS title, '1'::boolean AS done UNION ALL
+    SELECT 'Finish FlyRank Assignment' AS title, '0'::boolean AS done
 ) WHERE (SELECT COUNT(*) FROM tasks) = 0;
 
 
