@@ -1,4 +1,4 @@
-# Task API: A Basic To-Do List Manager CRUD API
+# Task API: Containerized To-Do List Manager (FastAPI + PostgreSQL)
 
 ---
 
@@ -6,27 +6,33 @@
 
 ---
 
-This project was created by **Joemarc Jr. D. Castillo** for compliance with the **FlyRank Internship's Week 3** Requirement ***Connecting to the database*** also known as _Assignment A2_ or _BE-02_ under the Backend AI Engineering Track. The update of this README markdown file specifically is a requirement to accomplish __Stage 5__ _(database documentation)_ of this assignment. In summary, **all six required stages were successfully implemented for this project.** In summary, this project is an upgrade of the first assignment. From a simple CRUD To-Do List API, this project became a step closer to becoming a production-level product as it now has its very own **database**. Because of this upgrade, data for the to-do list no longer live in memory; but in an actual permanent .db file (unless deleted of course).
+This project was created by **Joemarc Jr. D. Castillo** for compliance with the **FlyRank Internship's Week 3** Requirement, specifically under the **BE-04** module of the Backend AI Engineering Track. 
 
-## Dependencies, Installation, and Execution
-*Note: Running these commands in a virtual environment(.venv) would be useful, especially if you don't plan to use the dependencies in this project elsewhere.*
+This API is a robust, "stateless" CRUD To-Do List manager. Upgrading from local memory and standard SQLite files, this iteration introduces a full production-ready architecture. The application (compute) is completely isolated from the PostgreSQL database (storage) using Docker containers. This ensures zero OS clutter and eliminates "works on my machine" bugs. 
 
-**SQLite** is a simple and lightweight relational database engine. Since this is a simple project, SQLite is perfect for creating a prototype and exploring the basics of backend-to-database connection. Just from this simple upgrade, the data now lives in a single file and users can now access their past data without manually retyping their progress.
+Additionally, this version implements the **Repository Pattern** (`repository.py`) to cleanly abstract all database transaction logic away from the API routing layer, adhering to industry-standard design patterns for modularity and scalable system architecture.
 
-##### Project Dependencies:
-Python 3.12+
-FastAPI Library
-SQLite3 (built-in in Python)
+## Execution (One-Command Stack)
 
-##### Installation
-In your terminal, install the FastAPI library using the Python Package Installer (pip) 
-`pip install "fastapi[standard]"`
+This repository is designed so that anyone can clone it and run the entire API and database in under 5 minutes, with no manual database setup required.
 
-##### Execution
-Enter the path: ../BE-01
-Run the following commands in your terminal:
-[Mandatory]
-`fastapi dev main.py`         - init server     
+**1. Environment Variables**
+To securely connect the application to the database, you must configure your local environment variables. 
+Copy the provided `.env.example` file and rename it to `.env`:
+
+`cp .env.example .env`
+
+Inside the `.env` file, you must define the following variable to construct the `DATABASE_URL`:
+*   `POSTGRES_PASSWORD`: Assign a secure string password for the database superuser.
+
+*(Note: Double-check that your `.env` file is git-ignored to prevent leaking database credentials.)*
+
+**2. Start the Stack**
+Run the following command in the root directory to build the images, spin up the network, and automatically seed the Postgres database:
+
+`docker compose up`
+
+*(To destroy the environment and wipe the database volume cleanly, run `docker compose down -v`.)*
 
 ---
 
@@ -43,14 +49,15 @@ Run the following commands in your terminal:
 
 ---
 
-## Example Execution
-The following demonstrates a standard HTTP `GET` request to enter the root page, executed via `curl`, alongside the strict response headers and serialized JSON payload returned by the server.
+---
 
-**Sample Command:**
-Find Root
+## Example Execution
+The following demonstrates a standard HTTP `GET` request to retrieve all seeded tasks, executed via `curl -i` to show the full round-trip HTTP response headers alongside the serialized JSON payload.
+
+**Command:**
 ```bash
-curl -X 'GET' \
-  'http://127.0.0.1:8000/' \
+curl -i -X 'GET' \
+  '[http://127.0.0.1:8000/tasks](http://127.0.0.1:8000/tasks)' \
   -H 'accept: application/json'
 ```
 
