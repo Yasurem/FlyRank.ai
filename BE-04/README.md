@@ -56,8 +56,8 @@ The following demonstrates a standard HTTP `GET` request to retrieve all seeded 
 
 **Command:**
 ```bash
-curl -i -X 'GET' \
-  '[http://127.0.0.1:8000/tasks](http://127.0.0.1:8000/tasks)' \
+curl -X 'GET' \
+  'http://0.0.0.0:8000/' \
   -H 'accept: application/json'
 ```
 
@@ -124,10 +124,13 @@ curl -X 'PUT' \
 
 
 ## SwaggerUI Screenshot:
-![Swagger UI Screenshot for Stage 5](images/Swagger_UI.png)
+![BE-01: Swagger UI Screenshot for Stage 5](images/Swagger_UI.png)
 
 ## Database open in DB Browser for SQLite Screenshot
-![Swagger UI Screenshot for Stage 5](images/Database.png)
+![BE-02: Database Image](images/Database.png)
 
 ## SQL Query from Stage 4
-![Swagger UI Screenshot for Stage 5](images/SQL_query.png)
+![BE-02: SQL Query for Stage 5](images/SQL_query.png)
+
+## PSQL Query Screenshot
+![BE-04: PSQL Query for Stage 5](images/PSQL_BE-04.png)
