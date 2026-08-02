@@ -68,7 +68,7 @@ def get_tasks():
 def get_task(id: int):
     row = repository.get_task(id)
 
-    if not row:
+    if not row or row is None:
         return JSONResponse(status_code=404, content={"error": f"Task {id} not found."})
 
     return row

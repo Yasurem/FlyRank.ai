@@ -49,8 +49,8 @@ def get_task(task_id: int):
             SELECT *
             FROM tasks
             WHERE id = %s
-            """, (task_id)
-        ).fetchone
+            """, (task_id,)
+        ).fetchone()
 
 def create_task(title: str, done: bool = False):
     with psycopg.connect(get_db_url(), row_factory=dict_row) as conn:
